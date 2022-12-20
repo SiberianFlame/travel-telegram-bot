@@ -1,9 +1,26 @@
 import json
 import datetime
-from typing import Union, Type
+from typing import Union, Type, Tuple
 
 import requests
 import translators.server as tss
+
+
+def data_input() -> dict:
+    search_town = input('Введите город для поиска: ')
+    search_hotels_amount = input('Введите количество отелей (не больше 5): ')
+    is_photos = input('Нужно ли выводить фотографии? (да/нет): ').lower()
+    if is_photos == 'да':
+        photos_amount = input('Введите количество фотографий (не больше 3): ')
+    else:
+        photos_amount = 3
+    start_date = input('Введите планируемую дату заселения в отель (в формате дд.мм.гг): ')
+    end_date = input('Введите планируемую дату выезда из отеля (в формате дд.мм.гг): ')
+
+    params_dict = {'town': search_town, 'hotelsAmount': search_hotels_amount, 'isPhotos': is_photos,
+                   'photosAmount': photos_amount, 'startDate': start_date, 'endDate': end_date}
+
+    return params_dict
 
 
 def is_data_valid(day: int, month: int, year: int) -> bool:
@@ -34,28 +51,7 @@ def is_data_valid(day: int, month: int, year: int) -> bool:
         return True
 
 
-def lowprice(city: str, hotels_amount: int, start_date: str, end_date: str, photos_flag: str, photos_amount: int = 3)\
-        -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
-    """
-    Func that finds a specified number of the cheapest hotels in a specified city.
-
-    :param city: City to look for hotels.
-    :param hotels_amount: Number of hotels to be found.
-    :param start_date: Check-in date.
-    :param end_date: Check-out date.
-    :param photos_flag: Specifies whether to display photos.
-    :param photos_amount: Number of photos to output.
-
-    :return: Tuple consisting of information about hotels.
-    :rtype: Tuple (in case everything is OK) or Exception (in case something went wrong).
-    """
-    # Блок проверок на правильность введённых данных
-
-    if not all([isinstance(city, str), isinstance(hotels_amount, int), isinstance(start_date, str),
-                isinstance(end_date, str), isinstance(photos_flag, str), isinstance(photos_amount, int)]):
-        print('Ошибка: неправильный ввод данных')
-        return TypeError
-
+def date_split(start_date: str, end_date: str) -> Union[tuple, type[ValueError]]:
     start_date = start_date.split('.')
     end_date = end_date.split('.')
 
@@ -78,11 +74,96 @@ def lowprice(city: str, hotels_amount: int, start_date: str, end_date: str, phot
         end_year = int(end_date[2])
 
     except ValueError:
-        print('Ошибка: неверная дата')
         return ValueError
     except IndexError:
-        print('Ошибка: неверная дата')
         return ValueError
+    else:
+        return (start_day, start_month, start_year), (end_day, end_month, end_year)
+
+
+def lowprice_parser(api_data, hotels_amount, photos_flag):
+    hotels_list = []
+
+    for elem in api_data['data']['propertySearch']['properties']:
+
+        if len(hotels_list) != hotels_amount and round(elem['price']['lead']['amount']) != 0:
+
+            if photos_flag:
+                hotels_list.append({
+                    'name': elem['name'],
+                    'id': elem['id'],
+                    'cost': round(elem['price']['lead']['amount']),
+                    'image': [elem['propertyImage']['image']['url']],
+                    'distance': elem['destinationInfo']['distanceFromDestination']['value']})
+
+            else:
+                hotels_list.append({
+                    'name': elem['name'],
+                    'id': elem['id'],
+                    'cost': round(elem['price']['lead']['amount']),
+                    'distance': elem['destinationInfo']['distanceFromDestination']['value']})
+
+        else:
+
+            for hotel in hotels_list[:]:
+
+                if hotel['cost'] > round(elem['price']['lead']['amount']) != 0:
+                    if photos_flag:
+                        hotels_list.remove(hotel)
+                        hotels_list.append({
+                            'name': elem['name'],
+                            'id': elem['id'],
+                            'cost': round(elem['price']['lead']['amount']),
+                            'image': [elem['propertyImage']['image']['url']],
+                            'distance': elem['destinationInfo']['distanceFromDestination']['value']})
+
+                    else:
+                        hotels_list.remove(hotel)
+                        hotels_list.append({
+                            'name': elem['name'],
+                            'id': elem['id'],
+                            'cost': round(elem['price']['lead']['amount']),
+                            'distance': elem['destinationInfo']['distanceFromDestination']['value']})
+
+                    break
+
+    return hotels_list
+
+
+def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
+    """
+    Func that finds a specified number of the cheapest hotels in a specified city.
+
+    :param params: Dict containing parameters for func
+
+    :return: Tuple consisting of information about hotels.
+    :rtype: Tuple (in case everything is OK) or Exception (in case something went wrong).
+    """
+
+    city, hotels_amount, start_date, end_date, photos_flag, photos_amount = \
+        params['town'], params['hotelsAmount'], params['startDate'], \
+        params['endDate'], params['isPhotos'], params['photosAmount']
+
+    # Блок проверок на правильность введённых данных
+
+    try:
+        hotels_amount = int(hotels_amount)
+        photos_amount = int(photos_amount)
+    except ValueError:
+        return ValueError
+
+    if not all([isinstance(city, str), isinstance(hotels_amount, int), isinstance(start_date, str),
+                isinstance(end_date, str), isinstance(photos_flag, str), isinstance(photos_amount, int)]):
+        print('Ошибка: неправильный ввод данных')
+        return TypeError
+
+    try:
+        dates_tuple = date_split(start_date, end_date)
+        start_date, end_date = dates_tuple[0], dates_tuple[1]
+        start_day, start_month, start_year = start_date[0], start_date[1], start_date[2]
+        end_day, end_month, end_year = end_date[0], end_date[1], end_date[2]
+    except TypeError:
+        return TypeError
 
     if not is_data_valid(start_day, start_month, start_year) or not is_data_valid(end_day, end_month, end_year):
         print('Ошибка: неверная дата')
@@ -149,52 +230,7 @@ def lowprice(city: str, hotels_amount: int, start_date: str, end_date: str, phot
                                            json=properties_parameters, headers=properties_headers)
     properties_data = json.loads(properties_response.text)
 
-    hotels_list = []
-
-    # составляем список из отелей с наименьшей стоимостью
-    for elem in properties_data['data']['propertySearch']['properties']:
-
-        if len(hotels_list) != hotels_amount and round(elem['price']['lead']['amount']) != 0:
-
-            if photos_flag:
-                hotels_list.append({
-                    'name': elem['name'],
-                    'id': elem['id'],
-                    'cost': round(elem['price']['lead']['amount']),
-                    'image': [elem['propertyImage']['image']['url']],
-                    'distance': elem['destinationInfo']['distanceFromDestination']['value']})
-
-            else:
-                hotels_list.append({
-                    'name': elem['name'],
-                    'id': elem['id'],
-                    'cost': round(elem['price']['lead']['amount']),
-                    'distance': elem['destinationInfo']['distanceFromDestination']['value']})
-
-        else:
-
-            for hotel in hotels_list[:]:
-
-                if hotel['cost'] > round(elem['price']['lead']['amount']) != 0:
-                    if photos_flag:
-                        hotels_list.remove(hotel)
-                        hotels_list.append({
-                            'name': elem['name'],
-                            'id': elem['id'],
-                            'cost': round(elem['price']['lead']['amount']),
-                            'image': [elem['propertyImage']['image']['url']],
-                            'distance': elem['destinationInfo']['distanceFromDestination']['value']})
-
-                    else:
-                        hotels_list.remove(hotel)
-                        hotels_list.append({
-                            'name': elem['name'],
-                            'id': elem['id'],
-                            'cost': round(elem['price']['lead']['amount']),
-                            'distance': elem['destinationInfo']['distanceFromDestination']['value']})
-
-                    break
-
+    hotels_list = lowprice_parser(properties_data, hotels_amount, photos_flag)
 
     hotels_url = "https://hotels4.p.rapidapi.com/properties/v2/detail"
     days_amount = (datetime.date(end_year, end_month, end_day) - datetime.date(start_year, start_month, start_day)).days
@@ -218,17 +254,8 @@ def lowprice(city: str, hotels_amount: int, start_date: str, end_date: str, phot
 
 
 if __name__ == '__main__':
-    search_town = input('Введите город для поиска: ')
-    search_hotels_amount = int(input('Введите количество отелей (не больше 5): '))
-    is_photos = input('Нужно ли выводить фотографии? (да/нет): ').lower()
-    if is_photos == 'да':
-        photos_amount = int(input('Введите количество фотографий (не больше 3): '))
-    else:
-        photos_amount = 3
-    start_date = input('Введите планируемую дату заселения в отель (в формате дд.мм.гг): ')
-    end_date = input('Введите планируемую дату выезда из отеля (в формате дд.мм.гг): ')
-    for hotel in lowprice(
-            search_town, search_hotels_amount, start_date, end_date, is_photos, photos_amount=photos_amount):
+    # for test only
+    for hotel in lowprice(data_input()):
         print('\nНазвание отеля:', hotel['name'])
         print('ID отеля:', hotel['id'])
         print('Описание отеля:', hotel['description'])
@@ -237,7 +264,7 @@ if __name__ == '__main__':
         print('Цена за одну ночь:', str(hotel['cost']) + '$', end='\t')
         print('Итоговая цена:', str(hotel['totalCost']) + '$')
 
-        if 'images' in hotel.keys():
-            for image in hotel['images']:
+        if 'image' in hotel.keys():
+            for image in hotel['image']:
                 print('Ссылка на изображение:', image)
 
