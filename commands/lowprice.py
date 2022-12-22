@@ -7,6 +7,12 @@ import translators.server as tss
 
 
 def data_input() -> dict:
+    """
+    Func for data entry.
+    :return: Dict with entered data.
+    :rtype: dict
+    """
+
     search_town = input('Введите город для поиска: ')
     search_hotels_amount = input('Введите количество отелей (не больше 5): ')
     is_photos = input('Нужно ли выводить фотографии? (да/нет): ').lower()
@@ -52,6 +58,14 @@ def is_data_valid(day: int, month: int, year: int) -> bool:
 
 
 def date_split(start_date: str, end_date: str) -> Union[tuple, type[ValueError]]:
+    """
+    Func that divides two dates into days, months and years.
+    :param start_date: Check-in date.
+    :param end_date: Check-out date.
+    :return: Tuple with two divided dates.
+    :rtype: Tuple (if everything is OK), Exception (if something went wrong).
+    """
+
     start_date = start_date.split('.')
     end_date = end_date.split('.')
 
@@ -74,14 +88,25 @@ def date_split(start_date: str, end_date: str) -> Union[tuple, type[ValueError]]
         end_year = int(end_date[2])
 
     except ValueError:
+        print('Преобразование дней в date_split не удалось')
         return ValueError
     except IndexError:
+        print('Преобразование дней в date_split не удалось')
         return ValueError
     else:
         return (start_day, start_month, start_year), (end_day, end_month, end_year)
 
 
-def lowprice_parser(api_data, hotels_amount, photos_flag):
+def lowprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
+    """
+    Parser func for the cheapest hotels.
+    :param api_data: JSON with all properties in the specified city.
+    :param hotels_amount: Amount of hotels to be found.
+    :param photos_flag: Whether to add photo.
+    :return: List of the cheapest hotels.
+    :rtype: list
+    """
+
     hotels_list = []
 
     for elem in api_data['data']['propertySearch']['properties']:
@@ -132,7 +157,7 @@ def lowprice_parser(api_data, hotels_amount, photos_flag):
 
 def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
     """
-    Func that finds a specified number of the cheapest hotels in a specified city.
+    Func that returns a specified number of the cheapest hotels in a specified city.
 
     :param params: Dict containing parameters for func
 
@@ -150,11 +175,12 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
         hotels_amount = int(hotels_amount)
         photos_amount = int(photos_amount)
     except ValueError:
+        print('Отель или фото в int не перевелись')
         return ValueError
 
     if not all([isinstance(city, str), isinstance(hotels_amount, int), isinstance(start_date, str),
                 isinstance(end_date, str), isinstance(photos_flag, str), isinstance(photos_amount, int)]):
-        print('Ошибка: неправильный ввод данных')
+        print('Ошибка: неправильный ввод данных (тип не соответствует)')
         return TypeError
 
     try:
@@ -163,26 +189,32 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
         start_day, start_month, start_year = start_date[0], start_date[1], start_date[2]
         end_day, end_month, end_year = end_date[0], end_date[1], end_date[2]
     except TypeError:
+        print('С разделением даты из tuple проблема')
         return TypeError
 
     if not is_data_valid(start_day, start_month, start_year) or not is_data_valid(end_day, end_month, end_year):
-        print('Ошибка: неверная дата')
+        print('Ошибка: дата не прошла проверку на валидность')
         return ValueError
 
     if start_day >= end_day and start_month >= end_month and start_year >= end_year:
-        print('Ошибка: неверная дата')
+        print('Ошибка: ошибка с днями')
         return ValueError
 
     if hotels_amount <= 0 or hotels_amount > 5 or photos_amount > 3 or photos_amount <= 0:
-        print('Ошибка: неправильный ввод данных')
+        print('Ошибка: с количеством отелей или фото')
         return ValueError
 
-    if photos_flag == 'да':
+    if photos_flag.lower() == 'да':
         photos_flag = True
-    elif photos_flag == 'нет':
+    elif photos_flag.lower() == 'нет':
         photos_flag = False
     else:
-        print('Ошибка: неправильный ввод данных')
+        print('Ошибка: флаг фото')
+        return ValueError
+
+    days_amount = (datetime.date(end_year, end_month, end_day) - datetime.date(start_year, start_month, start_day)).days
+    if days_amount <= 0:
+        print('Ошибка: даты одна вперед другой либо одинаковые')
         return ValueError
 
     # print('Ввод данных работает нормально. Завершаю тест.')
@@ -233,7 +265,6 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
     hotels_list = lowprice_parser(properties_data, hotels_amount, photos_flag)
 
     hotels_url = "https://hotels4.p.rapidapi.com/properties/v2/detail"
-    days_amount = (datetime.date(end_year, end_month, end_day) - datetime.date(start_year, start_month, start_day)).days
 
     # добавляем найденным отелям общую цену, адрес, описание и фото, если нужно
     for index, hotel in enumerate(hotels_list[:]):

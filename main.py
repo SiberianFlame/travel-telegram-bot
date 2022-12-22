@@ -52,13 +52,15 @@ if __name__ == '__main__':
         params_dict['isPhotos'] = message.text
         if params_dict['isPhotos'].lower() == 'да':
             bot.send_message(message.from_user.id, "Введите количество фотографий (не больше 3)")
+            bot.register_next_step_handler(message, get_start_date)
         else:
-            message = '3'
-        bot.register_next_step_handler(message, get_start_date)
-
+            pass
 
     def get_start_date(message):
-        params_dict['photosAmount'] = message.text
+        if params_dict['isPhotos'].lower() == 'да':
+            params_dict['photosAmount'] = message.text
+        else:
+            params_dict['photosAmount'] = 3
         bot.send_message(message.from_user.id, "Введите планируемую дату заселения в отель (в формате дд.мм.гг):")
         bot.register_next_step_handler(message, get_end_date)
 
@@ -73,21 +75,23 @@ if __name__ == '__main__':
         params_dict['endDate'] = message.text
         hotels = lowprice.lowprice(params_dict)
 
-        if isinstance(hotels, ValueError) or isinstance(hotels, TypeError):
+        if isinstance(hotels, type):
             bot.send_message(message.from_user.id, "Ошибка - неверный ввод данных\nПопробуйте снова!")
-        elif isinstance(hotels, NameError):
-            bot.send_message(message.from_user.id, "Ошибка - город не найден\nПопробуйте ввести другое название!")
         else:
             for elem in hotels:
                 result_str = '{name}\n{description}\nАдрес отеля: {address}' \
-                             '\nЦена за одну ночь: {cost}\nИтоговая цена: {total_cost}'.format(name=elem['name'],
-                                                                                               description=elem['description'],
-                                                                                               address=elem['address'],
-                                                                                               cost=elem['cost'],
-                                                                                               total_cost=elem['totalCost'])
+                             '\nЦена за одну ночь: {cost}$\nИтоговая цена: {total_cost}$'.format(name=elem['name'],
+                                                                                                 description=elem[
+                                                                                                     'description'],
+                                                                                                 address=elem[
+                                                                                                     'address'],
+                                                                                                 cost=elem['cost'],
+                                                                                                 total_cost=elem[
+                                                                                                     'totalCost'])
                 bot.send_message(message.from_user.id, result_str)
                 if 'image' in elem.keys():
                     for image in elem['image']:
                         bot.send_photo(message.from_user.id, image)
+
 
     bot.polling(none_stop=True, interval=0)
