@@ -1,3 +1,5 @@
+import json.decoder
+
 import telebot
 from telebot import types
 
@@ -54,13 +56,13 @@ if __name__ == '__main__':
             bot.send_message(message.from_user.id, "Введите количество фотографий (не больше 3)")
             bot.register_next_step_handler(message, get_start_date)
         else:
-            pass
+            params_dict['photosAmount'] = 3
+            bot.send_message(message.from_user.id, "Введите планируемую дату заселения в отель (в формате дд.мм.гг):")
+            bot.register_next_step_handler(message, get_end_date)
 
     def get_start_date(message):
         if params_dict['isPhotos'].lower() == 'да':
             params_dict['photosAmount'] = message.text
-        else:
-            params_dict['photosAmount'] = 3
         bot.send_message(message.from_user.id, "Введите планируемую дату заселения в отель (в формате дд.мм.гг):")
         bot.register_next_step_handler(message, get_end_date)
 
@@ -73,7 +75,11 @@ if __name__ == '__main__':
 
     def lowprice_output(message):
         params_dict['endDate'] = message.text
-        hotels = lowprice.lowprice(params_dict)
+        bot.send_message(message.from_user.id, "Пожалуйста, подождите... Ищу отели.")
+        try:
+            hotels = lowprice.lowprice(params_dict)
+        except json.decoder.JSONDecodeError:
+            bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
 
         if isinstance(hotels, type):
             bot.send_message(message.from_user.id, "Ошибка - неверный ввод данных\nПопробуйте снова!")
