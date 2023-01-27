@@ -3,7 +3,7 @@ import json.decoder
 import telebot
 from telebot import types
 
-from commands import lowprice, highprice
+from commands import lowprice, highprice, utils
 
 if __name__ == '__main__':
     token = '5942028647:AAHKqonu2bEJbBYOpBlFqBzgMPF_pg45m-8'
@@ -25,28 +25,31 @@ if __name__ == '__main__':
                          '\n/help - выводит список команд',
                          reply_markup=keyboard)
 
+    @bot.message_handler(commands=['lowprice'],
+                         func=lambda message: message.text == '\u2B07\uFE0F Самые дешевые отели')
+    def lowprice_message(message) -> None:
+        bot.send_message(message.from_user.id, "Введите название города")
+        is_lowprice = True
+        bot.register_next_step_handler(message, get_hotels_amount, is_lowprice)
+
+    @bot.message_handler(commands=['highprice'],
+                         func=lambda message: message.text == '\u2B06\uFE0F Самые дорогие отели')
+    def highprice_message(message) -> None:
+        bot.send_message(message.from_user.id, "Введите название города")
+        is_lowprice = False
+        bot.register_next_step_handler(message, get_hotels_amount, is_lowprice)
+
+    @bot.message_handler(commands=['help'],
+                         func=lambda message: message.text == '\u2753 Помощь')
+    def help_message(message) -> None:
+        bot.send_message(message.from_user.id,
+                         'Список команд:'
+                         '\n/lowprice - выводит самые дешевые отели в выбранном городе'
+                         '\n/highprice - выводит самые дорогие отели в выбранном городе')
 
     @bot.message_handler(content_types=['text'])
     def get_text_messages(message) -> None:
-        if message.text == '/lowprice' or message.text == '\u2B07\uFE0F Самые дешевые отели':
-            bot.send_message(message.from_user.id, "Введите название города")
-            is_lowprice = True
-            bot.register_next_step_handler(message, get_hotels_amount, is_lowprice)
-
-        elif message.text == '/highprice' or message.text == '\u2B06\uFE0F Самые дорогие отели':
-            bot.send_message(message.from_user.id, "Введите название города")
-            is_lowprice = False
-            bot.register_next_step_handler(message, get_hotels_amount, is_lowprice)
-
-        elif message.text == '/help' or message.text == '\u2753 Помощь' or message.text.lower() == 'помощь':
-            bot.send_message(message.from_user.id,
-                             'Список команд:'
-                             '\n/lowprice - выводит самые дешевые отели в выбранном городе'
-                             '\n/highprice - выводит самые дорогие отели в выбранном городе')
-
-        else:
-            bot.send_message(message.from_user.id, "Я тебя не понимаю :( Напиши /help")
-
+        bot.send_message(message.from_user.id, "Я тебя не понимаю :( Напиши /help")
 
     def get_hotels_amount(message, is_lowprice):
         params_dict['town'] = message.text
@@ -86,11 +89,13 @@ if __name__ == '__main__':
     def output_func(message, is_lowprice):
         params_dict['endDate'] = message.text
         bot.send_message(message.from_user.id, "Пожалуйста, подождите... Ищу отели.")
+
         if is_lowprice:
             try:
                 hotels = lowprice.lowprice(params_dict)
             except json.decoder.JSONDecodeError:
                 bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
+
         else:
             try:
                 hotels = highprice.highprice(params_dict)
