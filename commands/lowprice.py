@@ -62,6 +62,7 @@ def lowprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
 
                     break
 
+    print('Длина hotels_list =', len(hotels_list))
     return hotels_list
 
 
@@ -79,57 +80,17 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
         params['town'], params['hotelsAmount'], params['startDate'], \
         params['endDate'], params['isPhotos'], params['photosAmount']
 
-    # Блок проверок на правильность введённых данных
-
     try:
-        hotels_amount = int(hotels_amount)
-        photos_amount = int(photos_amount)
-    except ValueError:
-        print('Отель или фото в int не перевелись')
-        return ValueError
-
-    if not all([isinstance(city, str), isinstance(hotels_amount, int), isinstance(start_date, str),
-                isinstance(end_date, str), isinstance(photos_flag, str), isinstance(photos_amount, int)]):
-        print('Ошибка: неправильный ввод данных (тип не соответствует)')
-        return TypeError
-
-    try:
-        dates_tuple = utils.date_split(start_date, end_date)
-        start_date, end_date = dates_tuple[0], dates_tuple[1]
-        start_day, start_month, start_year = start_date[0], start_date[1], start_date[2]
-        end_day, end_month, end_year = end_date[0], end_date[1], end_date[2]
+        start_day, start_month, start_year = utils.date_split(start_date)
+        end_day, end_month, end_year = utils.date_split(end_date)
     except TypeError:
         print('С разделением даты из tuple проблема')
         return TypeError
 
-    if not utils.is_data_valid(start_day, start_month, start_year) or not utils.is_data_valid(
-            end_day, end_month, end_year):
-        print('Ошибка: дата не прошла проверку на валидность')
-        return ValueError
+    days_amount = (datetime.date(end_year, end_month, end_day) -
+                   datetime.date(start_year, start_month, start_day)).days
 
-    if start_day >= end_day and start_month >= end_month and start_year >= end_year:
-        print('Ошибка: ошибка с днями')
-        return ValueError
-
-    if hotels_amount <= 0 or hotels_amount > 5 or photos_amount > 3 or photos_amount <= 0:
-        print('Ошибка: с количеством отелей или фото')
-        return ValueError
-
-    if photos_flag.lower() == 'да':
-        photos_flag = True
-    elif photos_flag.lower() == 'нет':
-        photos_flag = False
-    else:
-        print('Ошибка: флаг фото')
-        return ValueError
-
-    days_amount = (datetime.date(end_year, end_month, end_day) - datetime.date(start_year, start_month, start_day)).days
-    if days_amount <= 0:
-        print('Ошибка: даты одна вперед другой либо одинаковые')
-        return ValueError
-
-    # print('Ввод данных работает нормально. Завершаю тест.')
-    # return None
+    print('Перевожу город...')
 
     from_language, to_language = 'ru', 'en'                         # перевод введенного пользователем
     translated_city = tss.google(city, from_language, to_language)  # города на английский язык
@@ -139,14 +100,16 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
     querystring = {"q": translated_city}
 
     city_headers = {
-        "X-RapidAPI-Key": "681522802emsh38e571f157da2b7p1f8724jsn4921d6d0d281",
+        "X-RapidAPI-Key": "d97fd53db6msh4d9089b1849e616p1d574fjsn59345fc9ed65",
         "X-RapidAPI-Host": "hotels4.p.rapidapi.com"
     }
     properties_headers = {
         "content-type": "application/json",
-        "X-RapidAPI-Key": "681522802emsh38e571f157da2b7p1f8724jsn4921d6d0d281",
+        "X-RapidAPI-Key": "d97fd53db6msh4d9089b1849e616p1d574fjsn59345fc9ed65",
         "X-RapidAPI-Host": "hotels4.p.rapidapi.com"
     }
+
+    print('Делаю запрос для поиска id города...')
 
     city_response = requests.request("GET", city_url, headers=city_headers, params=querystring)
     city_data = json.loads(city_response.text)
@@ -169,6 +132,8 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
         print('Ошибка: данный город не найден')
         return NameError
 
+    print('id города найден успешно, ищу отели...')
+
     properties_response = requests.request("POST", properties_url,
                                            json=properties_parameters, headers=properties_headers)
     properties_data = json.loads(properties_response.text)
@@ -177,9 +142,14 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
 
     hotels_url = "https://hotels4.p.rapidapi.com/properties/v2/detail"
 
+    print('Нашел отели, ищу доп. информацию...')
+
     # добавляем найденным отелям общую цену, адрес, описание и фото, если нужно
     for index, hotel in enumerate(hotels_list[:]):
         hotel_parameters = {'propertyId': hotel['id']}
+
+        print(f'Делаю запрос по {index + 1} отелю...')
+
         hotel_response = requests.request('post', hotels_url, json=hotel_parameters, headers=properties_headers)
         hotel_data = json.loads(hotel_response.text)
         hotels_list[index]['description'] = hotel_data['data']['propertyInfo']['summary']['tagline']
@@ -192,6 +162,9 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
                     hotels_list[index]['image'].append(
                         hotel_data['data']['propertyInfo']['propertyGallery']['images'][2]['image']['url'])
 
+        print('Успешно...')
+
+    print('Успешно!')
     return tuple(hotels_list)
 
 

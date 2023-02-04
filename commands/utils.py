@@ -1,4 +1,112 @@
+import datetime
+from datetime import datetime, date
 from typing import Union
+
+
+def is_photos_amount_valid(photos_amount) -> bool:
+    """
+    Func that checks if photos amount is valid.
+    :param photos_amount: Photos amount to be sent.
+    :return: True (if everything is OK), False (if something went wrong).
+    :rtype: bool
+    """
+
+    try:
+        photos_amount = int(photos_amount)
+        if photos_amount > 3 or photos_amount <= 0:
+            raise ValueError
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def is_photos_flag_valid(photos_flag) -> bool:
+    """
+    Func that checks if photos flag is valid.
+    :param photos_flag: Flag indicating whether photos should be sent.
+    :return: True (if everything is OK), False (if something went wrong).
+    :rtype: bool
+    """
+
+    if not photos_flag.lower() == 'да' and not photos_flag.lower() == 'нет':
+        return False
+    else:
+        return True
+
+
+def is_city_valid(city) -> bool:
+    """
+    Func that checks if city is valid.
+    :param city: City to search for hotels.
+    :return: True (if everything is OK), False (if something went wrong).
+    :rtype: bool
+    """
+    if not isinstance(city, str):
+        return False
+    else:
+        return True
+
+
+def is_dates_valid(start_date, end_date) -> bool:
+    """
+    Func that checks if dates are valid.
+    :param start_date: Check-in date.
+    :param end_date: Check-out date.
+    :return: True (if everything is OK), False (if something went wrong).
+    :rtype: bool
+    """
+
+    try:
+
+        start_date = date_split(start_date)
+        end_date = date_split(end_date)
+
+        print('Начальная дата:', start_date)
+        print('Конечная дата:', end_date)
+
+        if isinstance(start_date, type) or isinstance(end_date, type):
+            raise ValueError
+        print('Проверку типов даты прошли')
+
+        if datetime(start_date[2], start_date[1], start_date[0]) > datetime(end_date[2], end_date[1], end_date[0]):
+            raise ValueError
+        print('Сравнение даты прошли')
+
+        days_amount = (date(end_date[2], end_date[1], end_date[0])
+                       - date(start_date[2], start_date[1], start_date[0])).days
+
+        if days_amount <= 0:
+            raise ValueError
+        print('Проверка количества дней пройдена')
+
+        if not is_data_valid(start_date[0], start_date[1], start_date[2]) or not is_data_valid(
+                end_date[0], end_date[1], end_date[2]):
+            raise ValueError
+
+        print('Проверка каждой даты пройдена')
+
+    except ValueError:
+        return False
+    else:
+        return True
+
+
+def is_hotels_amount_valid(hotels_amount) -> bool:
+    """
+    Func that checks if hotels amount is valid.
+    :param hotels_amount: Number of hotels to be found.
+    :return: True (if everything is OK), False (if something went wrong).
+    :rtype: bool
+    """
+
+    try:
+        if hotels_amount <= 0 or hotels_amount > 5:
+            raise ValueError
+    except ValueError:
+        return False
+    else:
+        return True
 
 
 def data_input() -> dict:
@@ -46,41 +154,31 @@ def is_data_valid(day: int, month: int, year: int) -> bool:
             (day > 28 and not is_leap_year and month == 2) or \
             (day > 31 and month in days31_month) or \
             (day > 30 and month in days30_month) or \
-            (0 <= month > 12) or year < 2022 or day <= 0 or month <= 0:
+            (0 <= month > 12) or year < 2023 or day <= 0 or month <= 0:
         return False
     else:
         return True
 
 
-def date_split(start_date: str, end_date: str) -> Union[tuple, type[ValueError]]:
+def date_split(date: str) -> Union[tuple, type[ValueError]]:
     """
     Func that divides two dates into days, months and years.
-    :param start_date: Check-in date.
-    :param end_date: Check-out date.
-    :return: Tuple with two divided dates.
+    :param date: Date to be split.
+    :return: Tuple with divided date.
     :rtype: Tuple (if everything is OK), Exception (if something went wrong).
     """
 
-    start_date = start_date.split('.')
-    end_date = end_date.split('.')
+    date = date.split('.')
 
     try:
-        if start_date[0].startswith('0'):
-            start_date[0].replace('0', '')
-        elif start_date[1].startswith('0'):
-            start_date[1].replace('0', '')
-        elif end_date[0].startswith('0'):
-            end_date[0].replace('0', '')
-        elif end_date[1].startswith('0'):
-            end_date[1].replace('0', '')
+        if date[0].startswith('0'):
+            date[0].replace('0', '')
+        elif date[1].startswith('0'):
+            date[1].replace('0', '')
 
-        start_day = int(start_date[0])
-        start_month = int(start_date[1])
-        start_year = int(start_date[2])
-
-        end_day = int(end_date[0])
-        end_month = int(end_date[1])
-        end_year = int(end_date[2])
+        day = int(date[0])
+        month = int(date[1])
+        year = int(date[2])
 
     except ValueError:
         print('Преобразование дней в date_split не удалось')
@@ -89,5 +187,5 @@ def date_split(start_date: str, end_date: str) -> Union[tuple, type[ValueError]]
         print('Преобразование дней в date_split не удалось')
         return ValueError
     else:
-        return (start_day, start_month, start_year), (end_day, end_month, end_year)
+        return day, month, year
 
