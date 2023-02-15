@@ -3,6 +3,18 @@ from datetime import datetime, date
 from typing import Union
 
 
+class Hotel:
+    def __init__(self, name, hotel_id, cost, distance, image='', description='', address='', total_cost = 0):
+        self.name = name
+        self.id = hotel_id
+        self.cost = cost
+        self.image = image
+        self.distance = distance
+        self.description = description
+        self.address = address
+        self.total_cost = total_cost
+
+
 def is_photos_amount_valid(photos_amount) -> bool:
     """
     Func that checks if photos amount is valid.

@@ -5,7 +5,9 @@ from typing import Union, Type
 import requests
 import translators.server as tss
 
-from commands import utils
+from commands import utils, history
+from commands.utils import Hotel
+
 
 
 def highprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
@@ -23,49 +25,45 @@ def highprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
     for elem in api_data['data']['propertySearch']['properties']:
 
         if len(hotels_list) != hotels_amount and round(elem['price']['lead']['amount']) != 0:
-
             if photos_flag:
-                hotels_list.append({
-                    'name': elem['name'],
-                    'id': elem['id'],
-                    'cost': round(elem['price']['lead']['amount']),
-                    'image': [elem['propertyImage']['image']['url']],
-                    'distance': elem['destinationInfo']['distanceFromDestination']['value']})
+                hotels_list.append(Hotel(name=elem['name'],
+                                         hotel_id=elem['id'],
+                                         cost=round(elem['price']['lead']['amount']),
+                                         image=[elem['propertyImage']['image']['url']],
+                                         distance=elem['destinationInfo']['distanceFromDestination']['value']))
 
             else:
-                hotels_list.append({
-                    'name': elem['name'],
-                    'id': elem['id'],
-                    'cost': round(elem['price']['lead']['amount']),
-                    'distance': elem['destinationInfo']['distanceFromDestination']['value']})
+                hotels_list.append(Hotel(name=elem['name'],
+                                         hotel_id=elem['id'],
+                                         cost=round(elem['price']['lead']['amount']),
+                                         distance=elem['destinationInfo']['distanceFromDestination']['value']))
 
         else:
 
             for hotel in hotels_list[:]:
 
-                if hotel['cost'] < round(elem['price']['lead']['amount']) != 0:
+                if hotel.cost < round(elem['price']['lead']['amount']) != 0:
                     if photos_flag:
                         hotels_list.remove(hotel)
-                        hotels_list.append({
-                            'name': elem['name'],
-                            'id': elem['id'],
-                            'cost': round(elem['price']['lead']['amount']),
-                            'image': [elem['propertyImage']['image']['url']],
-                            'distance': elem['destinationInfo']['distanceFromDestination']['value']})
+                        hotels_list.append(Hotel(name=elem['name'],
+                                                 hotel_id=elem['id'],
+                                                 cost=round(elem['price']['lead']['amount']),
+                                                 image=[elem['propertyImage']['image']['url']],
+                                                 distance=elem['destinationInfo']['distanceFromDestination']['value']))
 
                     else:
                         hotels_list.remove(hotel)
-                        hotels_list.append({
-                            'name': elem['name'],
-                            'id': elem['id'],
-                            'cost': round(elem['price']['lead']['amount']),
-                            'distance': elem['destinationInfo']['distanceFromDestination']['value']})
+                        hotels_list.append(Hotel(name=elem['name'],
+                                                 hotel_id=elem['id'],
+                                                 cost=round(elem['price']['lead']['amount']),
+                                                 distance=elem['destinationInfo']['distanceFromDestination']['value']))
 
                     break
 
     return hotels_list
 
 
+@history.logging_decorator
 def highprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
     """
     Func that returns a specified number of the most expensive hotels in a specified city.
@@ -138,19 +136,19 @@ def highprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], T
 
     # добавляем найденным отелям общую цену, адрес, описание и фото, если нужно
     for index, hotel in enumerate(hotels_list[:]):
-        hotel_parameters = {'propertyId': hotel['id']}
+        hotel_parameters = {'propertyId': hotel.id}
         hotel_response = requests.request('post', hotels_url, json=hotel_parameters, headers=properties_headers)
         hotel_data = json.loads(hotel_response.text)
-        hotels_list[index]['description'] = hotel_data['data']['propertyInfo']['summary']['tagline']
-        hotels_list[index]['address'] = hotel_data['data']['propertyInfo']['summary']['location']['address'][
+        hotels_list[index].description = hotel_data['data']['propertyInfo']['summary']['tagline']
+        hotels_list[index].address = hotel_data['data']['propertyInfo']['summary']['location']['address'][
             'addressLine']
-        hotels_list[index]['totalCost'] = hotels_list[index]['cost'] * days_amount
+        hotels_list[index].total_cost = hotels_list[index].cost * days_amount
         if photos_flag:
             if photos_amount >= 2:
-                hotels_list[index]['image'].append(
+                hotels_list[index].image.append(
                     hotel_data['data']['propertyInfo']['propertyGallery']['images'][1]['image']['url'])
                 if photos_amount == 3:
-                    hotels_list[index]['image'].append(
+                    hotels_list[index].image.append(
                         hotel_data['data']['propertyInfo']['propertyGallery']['images'][2]['image']['url'])
 
     return tuple(hotels_list)

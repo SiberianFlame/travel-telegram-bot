@@ -3,7 +3,7 @@ import json.decoder
 import telebot
 from telebot import types
 
-from commands import lowprice, highprice, utils
+from commands import lowprice, highprice, utils, history
 
 if __name__ == '__main__':
     token = '5942028647:AAHKqonu2bEJbBYOpBlFqBzgMPF_pg45m-8'
@@ -13,8 +13,10 @@ if __name__ == '__main__':
     key_help = types.KeyboardButton('/help')
     key_lowprice = types.KeyboardButton('/lowprice')
     key_highprice = types.KeyboardButton('/highprice')
-    keyboard.add(key_help, key_lowprice, key_highprice)
+    key_history = types.KeyboardButton('/history')
+    keyboard.add(key_help, key_lowprice, key_highprice, key_history)
     params_dict = {}
+
 
 
     @bot.message_handler(commands=['start'])
@@ -25,6 +27,7 @@ if __name__ == '__main__':
                          '\n/highprice - выводит самые дорогие отели в выбранном городе'
                          '\n/help - выводит список команд',
                          reply_markup=keyboard)
+
 
 
     @bot.message_handler(commands=['lowprice'])
@@ -47,6 +50,30 @@ if __name__ == '__main__':
                          'Список команд:'
                          '\n/lowprice - выводит самые дешевые отели в выбранном городе'
                          '\n/highprice - выводит самые дорогие отели в выбранном городе')
+
+    @bot.message_handler(commands=['history'])
+    def history_message(message) -> None:
+        if history.history_list:
+            for elem in history.history_list:
+                bot.send_message(message.from_user.id, 'Дата ввода команды {name}: {date}'.format(
+                    name=elem.command,
+                    date=elem.input_time))
+                for hotel in elem.hotels:
+                    result_str = '{name}\n{description}\nАдрес отеля: {address}' \
+                                 '\nЦена за одну ночь: {cost}$\nИтоговая цена: {total_cost}$'.format(name=hotel.name,
+                                                                                                     description=hotel.description,
+                                                                                                     address=hotel.address,
+                                                                                                     cost=hotel.cost,
+                                                                                                     total_cost=hotel.total_cost)
+                    bot.send_message(message.from_user.id, result_str)
+                    if hotel.image:
+                        for image in hotel.image:
+                            bot.send_photo(message.from_user.id, image)
+
+        else:
+            bot.send_message(message.from_user.id, 'История поиска отсутствует!')
+            start(message)
+
 
 
     @bot.message_handler(content_types=['text'])
@@ -138,14 +165,14 @@ if __name__ == '__main__':
             if is_lowprice:
                 try:
                     hotels = lowprice.lowprice(params_dict)
-                except json.decoder.JSONDecodeError:
+                except json.decoder.JSONDecodeError or UnboundLocalError:
                     bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
                     start(message)
 
             else:
                 try:
                     hotels = highprice.highprice(params_dict)
-                except json.decoder.JSONDecodeError:
+                except json.decoder.JSONDecodeError or UnboundLocalError:
                     bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
                     start(message)
 
@@ -154,18 +181,16 @@ if __name__ == '__main__':
             else:
                 for elem in hotels:
                     result_str = '{name}\n{description}\nАдрес отеля: {address}' \
-                                 '\nЦена за одну ночь: {cost}$\nИтоговая цена: {total_cost}$'.format(name=elem['name'],
-                                                                                                     description=elem[
-                                                                                                         'description'],
-                                                                                                     address=elem[
-                                                                                                         'address'],
-                                                                                                     cost=elem['cost'],
-                                                                                                     total_cost=elem[
-                                                                                                         'totalCost'])
+                                 '\nЦена за одну ночь: {cost}$\nИтоговая цена: {total_cost}$'.format(name=elem.name,
+                                                                                                     description=elem.description,
+                                                                                                     address=elem.address,
+                                                                                                     cost=elem.cost,
+                                                                                                     total_cost=elem.total_cost)
                     bot.send_message(message.from_user.id, result_str)
-                    if 'image' in elem.keys():
-                        for image in elem['image']:
+                    if elem.image:
+                        for image in elem.image:
                             bot.send_photo(message.from_user.id, image)
+                    start(message)
 
 
     bot.polling(none_stop=True, interval=0)
