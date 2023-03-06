@@ -14,6 +14,29 @@ class Hotel:
         self.address = address
         self.total_cost = total_cost
 
+def is_price_range_valid(start_price, end_price):
+    try:
+        start_price, end_price = int(start_price), int(end_price)
+        if end_price <= start_price or end_price <= 0 or start_price <= 0:
+            raise ValueError
+    except ValueError:
+        return False
+    except TypeError:
+        return False
+    else:
+        return True
+
+def is_distance_range_valid(start_distance, end_distance):
+    try:
+        start_distance, end_distance = int(start_distance), int(end_distance)
+        if end_distance <= start_distance or end_distance <= 0 or start_distance <= 0:
+            raise ValueError
+    except ValueError:
+        return False
+    except TypeError:
+        return False
+    else:
+        return True
 
 def is_photos_amount_valid(photos_amount) -> bool:
     """
