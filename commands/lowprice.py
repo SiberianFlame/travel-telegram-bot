@@ -61,7 +61,7 @@ def lowprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
     return hotels_list
 
 
-@history.logging_decorator
+@history.database_decorator
 def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
     """
     Func that returns a specified number of the cheapest hotels in a specified city.
