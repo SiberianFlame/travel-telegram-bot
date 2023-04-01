@@ -1,3 +1,4 @@
+import copy
 import json
 import datetime
 from typing import Union, Type
@@ -22,38 +23,30 @@ def lowprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
     for elem in api_data['data']['propertySearch']['properties']:
 
         if len(hotels_list) != hotels_amount and round(elem['price']['lead']['amount']) != 0:
-            if photos_flag:
-                hotels_list.append(Hotel(name=elem['name'],
-                                         hotel_id=elem['id'],
-                                         cost=round(elem['price']['lead']['amount']),
-                                         image=[elem['propertyImage']['image']['url']],
-                                         distance=elem['destinationInfo']['distanceFromDestination']['value']))
+            new_hotel = Hotel(name=elem['name'],
+                              hotel_id=elem['id'],
+                              cost=round(elem['price']['lead']['amount']),
+                              distance=round(elem['destinationInfo']['distanceFromDestination']['value'] * 1.609, 2))
 
-            else:
-                hotels_list.append(Hotel(name=elem['name'],
-                                         hotel_id=elem['id'],
-                                         cost=round(elem['price']['lead']['amount']),
-                                         distance=elem['destinationInfo']['distanceFromDestination']['value']))
+            if photos_flag:
+                new_hotel.image = [elem['propertyImage']['image']['url']]
+            hotels_list.append(copy.deepcopy(new_hotel))
 
         else:
 
             for hotel in hotels_list[:]:
 
                 if hotel.cost > round(elem['price']['lead']['amount']) != 0:
-                    if photos_flag:
-                        hotels_list.remove(hotel)
-                        hotels_list.append(Hotel(name=elem['name'],
-                                                 hotel_id=elem['id'],
-                                                 cost=round(elem['price']['lead']['amount']),
-                                                 image=[elem['propertyImage']['image']['url']],
-                                                 distance=elem['destinationInfo']['distanceFromDestination']['value']))
+                    hotels_list.remove(hotel)
+                    new_hotel = Hotel(name=elem['name'],
+                                      hotel_id=elem['id'],
+                                      cost=round(elem['price']['lead']['amount']),
+                                      distance=round(
+                                          elem['destinationInfo']['distanceFromDestination']['value'] * 1.609, 2))
 
-                    else:
-                        hotels_list.remove(hotel)
-                        hotels_list.append(Hotel(name=elem['name'],
-                                                 hotel_id=elem['id'],
-                                                 cost=round(elem['price']['lead']['amount']),
-                                                 distance=elem['destinationInfo']['distanceFromDestination']['value']))
+                    if photos_flag:
+                        new_hotel.image = [elem['propertyImage']['image']['url']]
+                    hotels_list.append(copy.deepcopy(new_hotel))
 
                     break
 
