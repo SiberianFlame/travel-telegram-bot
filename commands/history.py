@@ -98,7 +98,7 @@ if __name__ == '__main__':
         create_table_commands_query = '''CREATE TABLE commands(
                                     id INTEGER PRIMARY KEY,
                                     command_name TEXT NOT NULL,
-                                    input_time timestamp);'''
+                                    input_time TEXT);'''
 
         create_table_hotels_query = '''CREATE TABLE hotels(
                                     id INTEGER PRIMARY KEY,
