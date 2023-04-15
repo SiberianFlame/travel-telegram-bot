@@ -43,8 +43,9 @@ def logging_decorator(func: Callable) -> Callable:
 def database_decorator(func: Callable) -> Callable:
     @functools.wraps(func)
     def wrapped_func(params):
-        input_time = datetime.now()
+        input_time = datetime.now().strftime('%m/%d/%Y')
         result = func(params)
+        user_id = params['user_id']
 
         if isinstance(result, type):
             hotels = None
@@ -53,11 +54,11 @@ def database_decorator(func: Callable) -> Callable:
             hotels = result
 
         try:
-            sqlite_connection = sqlite3.connect('hotels-history.db')
-            add_command_query = '''INSERT INTO commands (command_name, input_time)
-            VALUES ({func_name}, {input_time});'''.format(
-                func_name=func.__name__, input_time=input_time)
-            get_command_id_query = '''SELECT command_id FROM commands ORDER BY input_time DESC LIMIT 1;'''
+            sqlite_connection = sqlite3.connect('commands/hotels-history.db')
+            add_command_query = '''INSERT INTO commands (user_id, command_name, input_time) VALUES ({user}, {func_name}, {input_time});'''.format(
+                func_name=func.__name__, input_time=input_time, user=user_id)
+            get_command_id_query = '''SELECT id FROM commands WHERE user_id = {user} ORDER BY input_time DESC LIMIT 1;'''.format(
+                user=user_id)
 
             cursor = sqlite_connection.cursor()
             print("База данных подключена к SQLite")
@@ -69,12 +70,23 @@ def database_decorator(func: Callable) -> Callable:
             cursor.execute(get_command_id_query)
             print('Запрос на получение id команды выполнен успешно')
             command_id = cursor.fetchone()
+            hotels_rows = []
+            images_rows = []
 
-            hotels_rows = [(
-                command_id, hotel.id, hotel.name, hotel.price, hotel.image, hotel.distance, hotel.description, hotel.address, hotel.total_cost
-            ) for hotel in hotels]
+            for hotel in hotels:
+                hotels_rows.append((
+                command_id, hotel.id, hotel.name, hotel.price, hotel.distance, hotel.description, hotel.address, hotel.total_cost))
 
-            cursor.executemany('''INSERT INTO hotels VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)''', hotels_rows)
+                for image in hotel.image:
+                    images_rows.append((hotel.id, image))
+
+            # hotels_rows = [(
+            #     command_id, hotel.id, hotel.name, hotel.price, hotel.distance, hotel.description, hotel.address, hotel.total_cost
+            # ) for hotel in hotels]
+
+            cursor.executemany('''INSERT INTO hotels VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', hotels_rows)
+            cursor.executemany('''INSERT INTO imagess VALUES (?, ?)''', images_rows)
+
             print('Запрос на добавление отелей выполнен успешно')
             sqlite_connection.commit()
 
@@ -97,6 +109,7 @@ if __name__ == '__main__':
         sqlite_connection = sqlite3.connect('hotels-history.db')
         create_table_commands_query = '''CREATE TABLE commands(
                                     id INTEGER PRIMARY KEY,
+                                    user_id INTEGER,
                                     command_name TEXT NOT NULL,
                                     input_time TEXT);'''
 
@@ -106,16 +119,21 @@ if __name__ == '__main__':
                                     hotel_id INTEGER NOT NULL,
                                     hotel_name TEXT NOT NULL,
                                     hotel_price INTEGER,
-                                    image TEXT,
                                     distance REAL,
                                     description TEXT,
                                     address TEXT,
                                     total_cost INTEGER);'''
 
+        create_table_images_query = '''CREATE TABLE images(
+        id INTEGER PRIMARY KEY,
+        hotel_id INTEGER,
+        image TEXT);'''
+
         cursor = sqlite_connection.cursor()
         print("База данных подключена к SQLite")
         cursor.execute(create_table_commands_query)
         cursor.execute(create_table_hotels_query)
+        cursor.execute(create_table_images_query)
         sqlite_connection.commit()
         print("Таблицы SQLite создана")
 

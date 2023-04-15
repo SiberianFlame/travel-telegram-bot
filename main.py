@@ -213,7 +213,7 @@ if __name__ == '__main__':
             bot.send_message(message.from_user.id, "Пожалуйста, подождите... Ищу отели.")
 
             try:
-                hotels = bestdeal.bestdeal(params_dict)
+                hotels = bestdeal.bestdeal(params_dict, message.from_user.id)
             except json.decoder.JSONDecodeError or UnboundLocalError:
                 bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
                 start(message)
@@ -254,14 +254,14 @@ if __name__ == '__main__':
 
             if is_lowprice:
                 try:
-                    hotels = lowprice.lowprice(params_dict)
+                    hotels = lowprice.lowprice(params_dict, message.from_user.id)
                 except json.decoder.JSONDecodeError or UnboundLocalError:
                     bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
                     start(message)
 
             else:
                 try:
-                    hotels = highprice.highprice(params_dict)
+                    hotels = highprice.highprice(params_dict, message.from_user.id)
                 except json.decoder.JSONDecodeError or UnboundLocalError:
                     bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
                     start(message)

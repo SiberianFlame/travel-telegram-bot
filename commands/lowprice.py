@@ -55,10 +55,11 @@ def lowprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
 
 
 @history.database_decorator
-def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
+def lowprice(params: dict, user_id) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
     """
     Func that returns a specified number of the cheapest hotels in a specified city.
 
+    :param user_id:
     :param params: Dict containing parameters for func
 
     :return: Tuple consisting of information about hotels.
