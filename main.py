@@ -19,7 +19,6 @@ if __name__ == '__main__':
     params_dict = {}
 
 
-
     @bot.message_handler(commands=['start'])
     def start(message) -> None:
         bot.send_message(message.chat.id,
@@ -30,6 +29,9 @@ if __name__ == '__main__':
                          '\n/bestdeal - выводит отели по заданному диапазону цен и расстояния'
                          '\n/history - выводит историю поиска отелей',
                          reply_markup=keyboard)
+
+        params_dict['user_id'] = message.from_user.id
+
 
 
 
@@ -213,7 +215,7 @@ if __name__ == '__main__':
             bot.send_message(message.from_user.id, "Пожалуйста, подождите... Ищу отели.")
 
             try:
-                hotels = bestdeal.bestdeal(params_dict, message.from_user.id)
+                hotels = bestdeal.bestdeal(params_dict)
             except json.decoder.JSONDecodeError or UnboundLocalError:
                 bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
                 start(message)
@@ -254,14 +256,14 @@ if __name__ == '__main__':
 
             if is_lowprice:
                 try:
-                    hotels = lowprice.lowprice(params_dict, message.from_user.id)
+                    hotels = lowprice.lowprice(params_dict)
                 except json.decoder.JSONDecodeError or UnboundLocalError:
                     bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
                     start(message)
 
             else:
                 try:
-                    hotels = highprice.highprice(params_dict, message.from_user.id)
+                    hotels = highprice.highprice(params_dict)
                 except json.decoder.JSONDecodeError or UnboundLocalError:
                     bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
                     start(message)

@@ -55,19 +55,15 @@ def database_decorator(func: Callable) -> Callable:
 
         try:
             sqlite_connection = sqlite3.connect('commands/hotels-history.db')
-            add_command_query = '''INSERT INTO commands (user_id, command_name, input_time) VALUES ({user}, {func_name}, {input_time});'''.format(
-                func_name=func.__name__, input_time=input_time, user=user_id)
-            get_command_id_query = '''SELECT id FROM commands WHERE user_id = {user} ORDER BY input_time DESC LIMIT 1;'''.format(
-                user=user_id)
 
             cursor = sqlite_connection.cursor()
             print("База данных подключена к SQLite")
 
-            cursor.execute(add_command_query)
+            cursor.execute('''INSERT INTO commands (user_id, command_name, input_time) VALUES (?, ?, ?);''', (user_id, func.__name__, input_time))
             print('Запрос на добавление команды выполнен успешно')
             sqlite_connection.commit()
 
-            cursor.execute(get_command_id_query)
+            cursor.execute('''SELECT id FROM commands WHERE user_id = (?) ORDER BY input_time DESC LIMIT 1;''', user_id)
             print('Запрос на получение id команды выполнен успешно')
             command_id = cursor.fetchone()
             hotels_rows = []

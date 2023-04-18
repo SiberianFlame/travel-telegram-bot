@@ -83,7 +83,7 @@ def highprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
 
 
 @history.database_decorator
-def highprice(params: dict, user_id) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
+def highprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
     """
     Func that returns a specified number of the most expensive hotels in a specified city.
 

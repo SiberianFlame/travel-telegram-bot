@@ -54,7 +54,7 @@ def bestdeal_parser(api_data, hotels_amount: int, photos_flag: bool, price_range
     return hotels_list
 
 @history.database_decorator
-def bestdeal(params: dict, user_id) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
+def bestdeal(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
     city, hotels_amount, start_date, end_date, photos_flag, photos_amount = \
         params['town'], params['hotelsAmount'], params['startDate'], \
             params['endDate'], params['isPhotos'], params['photosAmount']
