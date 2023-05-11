@@ -84,6 +84,7 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
 
     from_language, to_language = 'ru', 'en'                         # перевод введенного пользователем
     translated_city = tss.google(city, from_language, to_language)  # города на английский язык
+    print('Переведённый город:', translated_city)
 
     city_url = "https://hotels4.p.rapidapi.com/locations/v3/search"
     properties_url = "https://hotels4.p.rapidapi.com/properties/v2/list"
@@ -126,7 +127,10 @@ def lowprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
 
     properties_response = requests.request("POST", properties_url,
                                            json=properties_parameters, headers=properties_headers)
+    print('Ответ с отелями получен')
+
     properties_data = json.loads(properties_response.text)
+    print('Ответ загружен в переменную properties_data')
 
     hotels_list = lowprice_parser(properties_data, hotels_amount, photos_flag)
 

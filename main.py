@@ -254,7 +254,9 @@ if __name__ == '__main__':
         else:
             bot.send_message(message.from_user.id, "Пожалуйста, подождите... Ищу отели.")
 
+            print('Флаг is_lowprice равен', is_lowprice)
             if is_lowprice:
+                print('Пытаюсь вызвать функцию lowprice')
                 try:
                     hotels = lowprice.lowprice(params_dict)
                 except json.decoder.JSONDecodeError or UnboundLocalError:
