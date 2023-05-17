@@ -70,29 +70,31 @@ if __name__ == '__main__':
 
     @bot.message_handler(commands=['history'])
     def history_message(message) -> None:
-        if history.history_list:
-            for elem in history.history_list:
-                bot.send_message(message.from_user.id, 'Дата ввода команды {name}: {date}'.format(
-                    name=elem.command,
-                    date=elem.input_time))
-                for hotel in elem.hotels:
-                    result_str = '{name}\n{description}\nАдрес отеля: {address}' \
-                                 '\nЦена за одну ночь: {cost}$\nИтоговая цена: {total_cost}$'.format(name=hotel.name,
-                                                                                                     description=hotel.description,
-                                                                                                     address=hotel.address,
-                                                                                                     cost=hotel.cost,
-                                                                                                     total_cost=hotel.total_cost)
-                    bot.send_message(message.from_user.id, result_str)
-                    if hotel.image:
-                        for image in hotel.image:
+        try:
+            history_dict = history.history(message.from_user.id)
+            for value in history_dict.values():
+                bot.send_message(message.from_user.id,
+                                 "Команда {} была введена {}. Был получен следующий результат:".format(
+                                     value['name'],
+                                     value['input_time']))
+                for hotel in value['hotels'].values():
+                    bot.send_message(message.from_user.id,
+                                     'Отель {name} по адресу {address}.\nРасстояние: {distance}\n{desc}\nЦена: {cost}, итого: {total_cost}'.format(
+                                         name=hotel['name'],
+                                         address=hotel['address'],
+                                         distance=hotel['distance'],
+                                         desc=hotel['description'],
+                                         cost=hotel['price'],
+                                         total_cost=hotel['total_cost']
+                                     ))
+                    if hotel['images']:
+                        for image in hotel['images']:
                             bot.send_photo(message.from_user.id, image)
-
-        else:
-            bot.send_message(message.from_user.id, 'История поиска отсутствует!')
             start(message)
 
-
-
+        except:
+            bot.send_message(message.from_user.id, "Что-то пошло не так!")
+            start(message)
 
     @bot.message_handler(content_types=['text'])
     def get_text_messages(message) -> None:
@@ -253,10 +255,7 @@ if __name__ == '__main__':
 
         else:
             bot.send_message(message.from_user.id, "Пожалуйста, подождите... Ищу отели.")
-
-            print('Флаг is_lowprice равен', is_lowprice)
             if is_lowprice:
-                print('Пытаюсь вызвать функцию lowprice')
                 try:
                     hotels = lowprice.lowprice(params_dict)
                 except json.decoder.JSONDecodeError or UnboundLocalError:
@@ -272,6 +271,9 @@ if __name__ == '__main__':
 
             if isinstance(hotels, type):
                 bot.send_message(message.from_user.id, "Ошибка - неверный ввод данных\nПопробуйте снова!")
+                start(message)
+            elif hotels is None:
+                bot.send_message(message.from_user.id, "Произошла ошибка. Пожалуйста, попробуйте позже.")
                 start(message)
             else:
                 for elem in hotels:

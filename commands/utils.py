@@ -4,6 +4,18 @@ from typing import Union
 
 
 class Hotel:
+    """
+    Class that represents a hotel. It contains all the information about the hotel.
+    :param name: Name of the hotel.
+    :param hotel_id: id of the hotel.
+    :param cost: Cost of the hotel.
+    :param distance: Distance of the hotel.
+    :param image: Image of the hotel.
+    :param description: Description of the hotel.
+    :param address: Address of the hotel.
+    :param total_cost: Total cost of the hotel.
+    """
+
     def __init__(self, name, hotel_id, cost, distance, image='', description='', address='', total_cost = 0):
         self.name = name
         self.id = hotel_id
@@ -15,6 +27,10 @@ class Hotel:
         self.total_cost = total_cost
 
 def is_price_range_valid(start_price, end_price):
+    """
+    Price range validation.
+    """
+
     try:
         start_price, end_price = int(start_price), int(end_price)
         if end_price <= start_price or end_price <= 0 or start_price <= 0:
@@ -27,6 +43,10 @@ def is_price_range_valid(start_price, end_price):
         return True
 
 def is_distance_range_valid(start_distance, end_distance):
+    """
+    Distance range validation.
+    """
+
     try:
         start_distance, end_distance = int(start_distance), int(end_distance)
         if end_distance <= start_distance or end_distance <= 0 or start_distance <= 0:
@@ -97,29 +117,22 @@ def is_dates_valid(start_date, end_date) -> bool:
         start_date = date_split(start_date)
         end_date = date_split(end_date)
 
-        print('Начальная дата:', start_date)
-        print('Конечная дата:', end_date)
-
         if isinstance(start_date, type) or isinstance(end_date, type):
             raise ValueError
-        print('Проверку типов даты прошли')
 
         if datetime(start_date[2], start_date[1], start_date[0]) > datetime(end_date[2], end_date[1], end_date[0]):
             raise ValueError
-        print('Сравнение даты прошли')
 
         days_amount = (date(end_date[2], end_date[1], end_date[0])
                        - date(start_date[2], start_date[1], start_date[0])).days
 
         if days_amount <= 0:
             raise ValueError
-        print('Проверка количества дней пройдена')
 
         if not is_data_valid(start_date[0], start_date[1], start_date[2]) or not is_data_valid(
                 end_date[0], end_date[1], end_date[2]):
             raise ValueError
 
-        print('Проверка каждой даты пройдена')
 
     except ValueError:
         return False
@@ -142,30 +155,6 @@ def is_hotels_amount_valid(hotels_amount) -> bool:
         return False
     else:
         return True
-
-
-def data_input() -> dict:
-    """
-    Func for data entry.
-    :return: Dict with entered data.
-    :rtype: dict
-    """
-
-    search_town = input('Введите город для поиска: ')
-    search_hotels_amount = input('Введите количество отелей (не больше 5): ')
-    is_photos = input('Нужно ли выводить фотографии? (да/нет): ').lower()
-    if is_photos == 'да':
-        photos_amount = input('Введите количество фотографий (не больше 3): ')
-    else:
-        photos_amount = 3
-    start_date = input('Введите планируемую дату заселения в отель (в формате дд.мм.гг): ')
-    end_date = input('Введите планируемую дату выезда из отеля (в формате дд.мм.гг): ')
-
-    params_dict = {'town': search_town, 'hotelsAmount': search_hotels_amount, 'isPhotos': is_photos,
-                   'photosAmount': photos_amount, 'startDate': start_date, 'endDate': end_date}
-
-    return params_dict
-
 
 def is_data_valid(day: int, month: int, year: int) -> bool:
     """
@@ -216,10 +205,8 @@ def date_split(date: str) -> Union[tuple, type[ValueError]]:
         year = int(date[2])
 
     except ValueError:
-        print('Преобразование дней в date_split не удалось')
         return ValueError
     except IndexError:
-        print('Преобразование дней в date_split не удалось')
         return ValueError
     else:
         return day, month, year

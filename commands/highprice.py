@@ -26,18 +26,6 @@ def highprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
     for elem in api_data['data']['propertySearch']['properties']:
 
         if len(hotels_list) != hotels_amount and round(elem['price']['lead']['amount']) != 0:
-            # if photos_flag:
-            #     # hotels_list.append(Hotel(name=elem['name'],
-            #     #                          hotel_id=elem['id'],
-            #     #                          cost=round(elem['price']['lead']['amount']),
-            #     #                          image=[elem['propertyImage']['image']['url']],
-            #     #                          distance=elem['destinationInfo']['distanceFromDestination']['value']))
-            #
-            # else:
-            #     # hotels_list.append(Hotel(name=elem['name'],
-            #     #                          hotel_id=elem['id'],
-            #     #                          cost=round(elem['price']['lead']['amount']),
-            #     #                          distance=elem['destinationInfo']['distanceFromDestination']['value']))
             new_hotel = Hotel(name=elem['name'],
                           hotel_id=elem['id'],
                           cost=round(elem['price']['lead']['amount']),
@@ -52,21 +40,6 @@ def highprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
             for hotel in hotels_list[:]:
 
                 if hotel.cost < round(elem['price']['lead']['amount']) != 0:
-                    # if photos_flag:
-                    #     hotels_list.remove(hotel)
-                    #     hotels_list.append(Hotel(name=elem['name'],
-                    #                              hotel_id=elem['id'],
-                    #                              cost=round(elem['price']['lead']['amount']),
-                    #                              image=[elem['propertyImage']['image']['url']],
-                    #                              distance=elem['destinationInfo']['distanceFromDestination']['value']))
-                    #
-                    # else:
-                    #     hotels_list.remove(hotel)
-                    #     hotels_list.append(Hotel(name=elem['name'],
-                    #                              hotel_id=elem['id'],
-                    #                              cost=round(elem['price']['lead']['amount']),
-                    #                              distance=elem['destinationInfo']['distanceFromDestination']['value']))
-
                     hotels_list.remove(hotel)
                     new_hotel = Hotel(name=elem['name'],
                                   hotel_id=elem['id'],
@@ -85,13 +58,9 @@ def highprice_parser(api_data, hotels_amount: int, photos_flag: bool) -> list:
 @history.database_decorator
 def highprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
     """
-    Func that returns a specified number of the most expensive hotels in a specified city.
-
-    :param user_id:
-    :param params: Dict containing parameters for func.
-
-    :return: Tuple consisting of information about hotels.
-    :rtype: Tuple (in case everything is OK) or Exception (in case something went wrong).
+    Highprice func for /highprice command. Returns the most expensive hotels.
+    :param params: Dict with params for searching.
+    :return: Tuple with hotels (if everything's OK), error (if something went wrong)
     """
 
     city, hotels_amount, start_date, end_date, photos_flag, photos_amount = \
@@ -102,14 +71,16 @@ def highprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], T
         start_day, start_month, start_year = utils.date_split(start_date)
         end_day, end_month, end_year = utils.date_split(end_date)
     except TypeError:
-        print('С разделением даты из tuple проблема')
         return TypeError
 
     days_amount = (datetime.date(end_year, end_month, end_day) -
                    datetime.date(start_year, start_month, start_day)).days
 
-    from_language, to_language = 'ru', 'en'  # перевод введенного пользователем
-    translated_city = tss.google(city, from_language, to_language)  # города на английский язык
+    try:
+        from_language, to_language = 'ru', 'en'  # перевод введенного пользователем
+        translated_city = tss.google(city, from_language, to_language)  # города на английский язык
+    except TypeError:
+        return TypeError
 
     city_url = "https://hotels4.p.rapidapi.com/locations/v3/search"
     properties_url = "https://hotels4.p.rapidapi.com/properties/v2/list"
@@ -143,7 +114,6 @@ def highprice(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], T
                                                   'year': end_year},
                                  'rooms': [{'adults': 1}]}
     except NameError:
-        print('Ошибка: данный город не найден')
         return NameError
 
     properties_response = requests.request("POST", properties_url,

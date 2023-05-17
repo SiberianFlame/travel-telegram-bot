@@ -10,6 +10,17 @@ from commands import utils, history
 from commands.utils import Hotel
 
 def bestdeal_parser(api_data, hotels_amount: int, photos_flag: bool, price_range: tuple, distance_range: tuple) -> list:
+    """
+    Parser func for the cheapest hotels.
+    :param distance_range: Tuple with min distance and max distance.
+    :param price_range: Tuple with min price and max price.
+    :param api_data: JSON with all properties in the specified city.
+    :param hotels_amount: Amount of hotels to be found.
+    :param photos_flag: Whether to add photo.
+    :return: List of the hotels matching the given conditions.
+    :rtype: list
+    """
+
     hotels_list = []
 
     for elem in api_data['data']['propertySearch']['properties']:
@@ -55,6 +66,12 @@ def bestdeal_parser(api_data, hotels_amount: int, photos_flag: bool, price_range
 
 @history.database_decorator
 def bestdeal(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Type[NameError]]:
+    """
+    Bestdeal func for /bestdeal command. Returns hotels matching the given conditions.
+    :param params: Dict with params for searching.
+    :return: Tuple with hotels (if everything's OK), error (if something went wrong)
+    """
+
     city, hotels_amount, start_date, end_date, photos_flag, photos_amount = \
         params['town'], params['hotelsAmount'], params['startDate'], \
             params['endDate'], params['isPhotos'], params['photosAmount']
@@ -66,14 +83,16 @@ def bestdeal(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
         start_day, start_month, start_year = utils.date_split(start_date)
         end_day, end_month, end_year = utils.date_split(end_date)
     except TypeError:
-        print('С разделением даты из tuple проблема')
         return TypeError
 
     days_amount = (datetime.date(end_year, end_month, end_day) -
                    datetime.date(start_year, start_month, start_day)).days
 
-    from_language, to_language = 'ru', 'en'  # перевод введенного пользователем
-    translated_city = tss.google(city, from_language, to_language)  # города на английский язык
+    try:
+        from_language, to_language = 'ru', 'en'  # перевод введенного пользователем
+        translated_city = tss.google(city, from_language, to_language)  # города на английский язык
+    except TypeError:
+        return TypeError
 
     city_url = "https://hotels4.p.rapidapi.com/locations/v3/search"
     properties_url = "https://hotels4.p.rapidapi.com/properties/v2/list"
@@ -107,7 +126,6 @@ def bestdeal(params: dict) -> Union[tuple, Type[TypeError], Type[ValueError], Ty
                                                   'year': end_year},
                                  'rooms': [{'adults': 1}]}
     except NameError:
-        print('Ошибка: данный город не найден')
         return NameError
 
     properties_response = requests.request("POST", properties_url,
