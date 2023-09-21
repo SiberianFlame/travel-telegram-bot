@@ -1,4 +1,5 @@
 import json.decoder
+import os
 
 import telebot
 from telebot import types
@@ -6,7 +7,7 @@ from telebot import types
 from commands import lowprice, highprice, utils, history, bestdeal
 
 if __name__ == '__main__':
-    token = '5942028647:AAHKqonu2bEJbBYOpBlFqBzgMPF_pg45m-8'
+    token = os.getenv('TOKEN')
     bot = telebot.TeleBot(token)
 
     keyboard = types.ReplyKeyboardMarkup(resize_keyboard=True)
